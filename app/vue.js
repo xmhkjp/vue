@@ -1,10 +1,8 @@
 function Vue(options = {}) {
   this.$options = options;//将所有的属性挂载到了$options
   let data = this._data = this.$options.data;
-  //观察对象进行劫持
-  observe(data);
-  //this代理的this._data
-  for (let key in data) {
+  observe(data); //观察对象进行劫持
+  for (let key in data) {//this代理的this._data
     Object.defineProperty(this, key, {
       enumerable: true,
       get(){
@@ -13,18 +11,17 @@ function Vue(options = {}) {
       set(newVal){
         this._data[key] = newVal;
       }
-
     })
   }
   initComputed.call(this);
   compile(options.el, this);
 }
-function initComputed(){//具有缓存功能的
+function initComputed() {//具有缓存功能的
   let vm = this;
   let computed = this.$options.computed;//Object.keys
-  Object.keys(computed).forEach(key=>{
-    Object.defineProperty(vm,key,{
-      get:typeof computed[key]=="function"?computed[key]:computed[key].get
+  Object.keys(computed).forEach(key => {
+    Object.defineProperty(vm, key, {
+      get: typeof computed[key] == "function" ? computed[key] : computed[key].get
     })
   });
 }
@@ -37,12 +34,13 @@ function compile(el, vm) {
     fragment.appendChild(child);
   }
   replace(fragment);
-  function subscribe(exp,replaceVal){
+  function subscribe(exp, replaceVal) {
     replaceVal();
-    let publisher = exp.lastIndexOf('.') > 0 ? eval(`vm.${exp.slice(0,exp.lastIndexOf('.'))}`)._publisher : vm._publisher;
+    let publisher = exp.lastIndexOf('.') > 0 ? eval(`vm.${exp.slice(0, exp.lastIndexOf('.'))}`)._publisher : vm._publisher;
     let watcher = new Watcher(replaceVal);
     publisher && publisher.subscribe(watcher);
   }
+
   function replace(fragment) {
     //如果文本里有多个表达式的话?
     Array.from(fragment.childNodes).forEach(function (node) {
@@ -55,20 +53,19 @@ function compile(el, vm) {
           let replaceVal = () => {
             node.textContent = text.replace(reg, eval(`vm.${exp}`));
           }
-          subscribe(exp,replaceVal);
+          subscribe(exp, replaceVal);
         }
-
       }
       if (node.nodeType == 1) {
         Array.from(node.attributes).forEach(attr => {
           let name = attr.name;
           let exp = attr.value;
           if (name == 'v-model') {
-            let replaceVal = ()=>{
+            let replaceVal = () => {
               node.value = eval(`vm.${exp}`);
             }
-            subscribe(exp,replaceVal);
-            node.addEventListener('input',event=>{
+            subscribe(exp, replaceVal);
+            node.addEventListener('input', event => {
               vm[exp] = event.target.value;
             })
           }
@@ -79,7 +76,6 @@ function compile(el, vm) {
       }
     });
   }
-
   root.appendChild(fragment);
 }
 
@@ -108,16 +104,13 @@ function observe(data) {
     }
   }
 }
-
 class Publisher {
   constructor() {
     this.watchers = [];
   }
-
   subscribe(watcher) {
     this.watchers.push(watcher);
   }
-
   notify() {
     this.watchers.forEach(item => item.update());
   }
@@ -127,6 +120,3 @@ class Watcher {
     this.update = update;
   }
 }
-
-//vue特点不能新增不存在的属性，不能存在的属性没有set 和 get
-//深度响应 因为每次赋予一个新对象时会给这个新对象增加数据劫持
